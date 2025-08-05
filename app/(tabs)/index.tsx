@@ -42,7 +42,7 @@ interface Message {
 }
 
 interface Group {
-  id: number;
+  id: string;
   name: string;
   member_count: number;
   current_streak: number;
@@ -66,8 +66,8 @@ export default function ChatScreen() {
   const [showDiagnosticModal, setShowDiagnosticModal] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Mock user ID - In real app, get from auth context
-  const currentUserId = 1;
+  // Mock user ID - In real app, get from auth context  
+  const currentUserId = '550e8400-e29b-41d4-a716-446655440000'; // UUID format
 
   useEffect(() => {
     checkDatabaseConnection();
@@ -129,11 +129,11 @@ export default function ChatScreen() {
 
   const loadMessages = async (groupId: number) => {
     try {
-      const response = await ApiService.getMessages(groupId);
+      const response = await ApiService.getMessages(groupId.toString());
       const formattedMessages = response.messages.map((msg: any) => ({
         ...msg,
-        id: msg.id.toString(),
-        sender: msg.user_id === currentUserId ? 'Tú' : msg.username,
+        id: msg.id,
+        sender: msg.user_id === currentUserId ? 'Tú' : msg.users?.username || 'Usuario',
         timestamp: new Date(msg.created_at),
       }));
       setMessages(formattedMessages);
@@ -156,7 +156,7 @@ export default function ChatScreen() {
     try {
       const messageType = selectedImage ? 'image' : 'text';
       const response = await ApiService.sendMessage(
-        selectedGroup.id,
+        selectedGroup.id.toString(),
         currentUserId,
         inputText.trim() || undefined,
         selectedImage || undefined,
@@ -165,7 +165,7 @@ export default function ChatScreen() {
 
       const newMessage: Message = {
         ...response.message,
-        id: response.message.id.toString(),
+        id: response.message.id,
         sender: 'Tú',
         timestamp: new Date(response.message.created_at),
       };

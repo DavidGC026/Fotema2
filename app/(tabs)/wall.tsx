@@ -22,10 +22,10 @@ import {
 import { ApiService } from '@/services/api';
 
 interface WallPhoto {
-  id: number;
-  group_id: number;
-  message_id: number;
-  user_id: number;
+  id: string;
+  group_id: string;
+  message_id: string;
+  user_id: string;
   image_url: string;
   image_filename: string;
   caption?: string;
@@ -37,7 +37,7 @@ interface WallPhoto {
 }
 
 interface Group {
-  id: number;
+  id: string;
   name: string;
   member_count: number;
   current_streak: number;
@@ -55,8 +55,8 @@ export default function WallScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Mock user ID - In real app, get from auth context
-  const currentUserId = 1;
+  // Mock user ID - In real app, get from auth context  
+  const currentUserId = '550e8400-e29b-41d4-a716-446655440000'; // UUID format
 
   useEffect(() => {
     loadGroups();
@@ -84,7 +84,7 @@ export default function WallScreen() {
 
   const loadWallPhotos = async (groupId: number) => {
     try {
-      const response = await ApiService.getWallPhotos(groupId);
+      const response = await ApiService.getWallPhotos(groupId.toString());
       setWallPhotos(response.wallPhotos);
     } catch (error) {
       console.error('Error loading wall photos:', error);
@@ -94,7 +94,7 @@ export default function WallScreen() {
   const handleRefresh = async () => {
     setRefreshing(true);
     if (selectedGroup) {
-      await loadWallPhotos(selectedGroup.id);
+      await loadWallPhotos(selectedGroup.id.toString());
     }
     setRefreshing(false);
   };
@@ -106,7 +106,7 @@ export default function WallScreen() {
 
   const handleLikePhoto = async (photo: WallPhoto) => {
     try {
-      await ApiService.likeWallPhoto(photo.id, currentUserId);
+      await ApiService.likeWallPhoto(photo.id.toString(), currentUserId);
       // Update local state
       setWallPhotos(prev => prev.map(p => 
         p.id === photo.id 
