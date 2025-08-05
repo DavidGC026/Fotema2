@@ -2,10 +2,15 @@ import { initializeDatabase } from '@/lib/database';
 
 export async function POST(request: Request) {
   try {
+    console.log('🚀 Iniciando inicialización de base de datos...');
     await initializeDatabase();
     
     return new Response(
-      JSON.stringify({ message: 'Database initialized successfully' }),
+      JSON.stringify({ 
+        message: 'Base de datos inicializada correctamente',
+        success: true,
+        timestamp: new Date().toISOString()
+      }),
       { 
         status: 200, 
         headers: { 
@@ -15,10 +20,21 @@ export async function POST(request: Request) {
       }
     );
   } catch (error) {
-    console.error('Database initialization error:', error);
+    console.error('❌ Error en la inicialización de base de datos:', error);
     return new Response(
-      JSON.stringify({ error: 'Failed to initialize database' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        error: 'Error al inicializar la base de datos',
+        details: error instanceof Error ? error.message : 'Error desconocido',
+        success: false,
+        timestamp: new Date().toISOString()
+      }),
+      { 
+        status: 500, 
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        } 
+      }
     );
   }
 }

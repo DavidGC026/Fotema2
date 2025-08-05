@@ -9,6 +9,9 @@ const dbConfig = {
   ssl: process.env.EXPO_PUBLIC_DB_SSL === 'true' ? {
     rejectUnauthorized: false
   } : false,
+  connectTimeout: 60000,
+  acquireTimeout: 60000,
+  timeout: 60000,
 };
 
 let connection: mysql.Connection | null = null;
@@ -17,9 +20,11 @@ export async function getConnection() {
   if (!connection) {
     try {
       connection = await mysql.createConnection(dbConfig);
-      console.log('Connected to MySQL database');
+      console.log('✅ Conectado exitosamente a la base de datos MySQL');
+      console.log(`📍 Host: ${dbConfig.host}`);
+      console.log(`🗄️ Base de datos: ${dbConfig.database}`);
     } catch (error) {
-      console.error('Error connecting to database:', error);
+      console.error('❌ Error al conectar con la base de datos:', error);
       throw error;
     }
   }
@@ -38,6 +43,8 @@ export async function initializeDatabase() {
   const conn = await getConnection();
   
   try {
+    console.log('🔧 Inicializando tablas de la base de datos...');
+    
     // Users table
     await conn.execute(`
       CREATE TABLE IF NOT EXISTS users (
@@ -201,9 +208,16 @@ export async function initializeDatabase() {
       )
     `);
 
-    console.log('Database tables initialized successfully');
+    console.log('✅ Tablas de la base de datos inicializadas correctamente');
+    
+    // Test the connection with a simple query
+    const [result] = await conn.execute('SELECT 1 as test') as any;
+    if (result && result.length > 0) {
+      console.log('🔍 Prueba de conexión exitosa');
+    }
+    
   } catch (error) {
-    console.error('Error initializing database:', error);
+    console.error('❌ Error al inicializar la base de datos:', error);
     throw error;
   }
 }
