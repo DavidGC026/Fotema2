@@ -1,15 +1,4 @@
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// Configure notification behavior
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
 
 export interface NotificationData {
   id: string;
@@ -35,46 +24,9 @@ class NotificationService {
   }
 
   async initialize() {
-    // Request permissions
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-
-    if (finalStatus !== 'granted') {
-      console.log('Failed to get push token for push notification!');
-      return;
-    }
-
-    // Get push token
-    if (Platform.OS !== 'web') {
-      const token = (await Notifications.getExpoPushTokenAsync()).data;
-      console.log('Push token:', token);
-      // Here you would typically send this token to your backend
-    }
-
+    console.log('Notification service initialized (mock mode)');
     // Load stored notifications
     await this.loadNotifications();
-
-    // Set up notification listeners
-    this.setupNotificationListeners();
-  }
-
-  private setupNotificationListeners() {
-    // Handle notifications when app is in foreground
-    Notifications.addNotificationReceivedListener((notification) => {
-      console.log('Notification received:', notification);
-    });
-
-    // Handle notification taps
-    Notifications.addNotificationResponseReceivedListener((response) => {
-      console.log('Notification tapped:', response);
-      const data = response.notification.request.content.data;
-      // Navigate to specific group or screen based on notification data
-    });
   }
 
   async addNotification(notification: Omit<NotificationData, 'id' | 'timestamp' | 'read'>) {
@@ -89,40 +41,8 @@ class NotificationService {
     await this.saveNotifications();
     this.notifyListeners();
 
-    // Send local notification
-    await this.sendLocalNotification(newNotification);
-  }
-
-  private async sendLocalNotification(notification: NotificationData) {
-    let title = '';
-    let body = '';
-
-    switch (notification.type) {
-      case 'photo':
-        title = `📸 ${notification.groupName}`;
-        body = `${notification.senderName} compartió una foto`;
-        break;
-      case 'message':
-        title = `💬 ${notification.groupName}`;
-        body = `${notification.senderName}: ${notification.content?.substring(0, 50)}${notification.content && notification.content.length > 50 ? '...' : ''}`;
-        break;
-      case 'streak':
-        title = `🔥 ¡Racha mantenida!`;
-        body = `${notification.groupName} mantiene la racha`;
-        break;
-    }
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title,
-        body,
-        data: {
-          groupId: notification.groupId,
-          type: notification.type,
-        },
-      },
-      trigger: null, // Show immediately
-    });
+    // Log notification instead of sending push notification
+    console.log('New notification:', newNotification);
   }
 
   getNotifications(): NotificationData[] {

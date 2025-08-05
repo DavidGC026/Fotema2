@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Modal,
-  Animated,
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -29,45 +28,27 @@ export default function NotificationWidget({ onNotificationPress }: Notification
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const bellAnimation = new Animated.Value(0);
 
   useEffect(() => {
     const notificationService = NotificationService.getInstance();
     
     // Initialize notifications only if not on web or if service is available
     try {
+      notificationService.initialize();
       setNotifications(notificationService.getNotifications());
       setUnreadCount(notificationService.getUnreadCount());
 
       // Subscribe to updates
       const unsubscribe = notificationService.subscribe((newNotifications) => {
         setNotifications(newNotifications);
-        const newUnreadCount = notificationService.getUnreadCount();
-        
-        // Animate bell if new notifications
-        if (newUnreadCount > unreadCount) {
-          Animated.sequence([
-            Animated.timing(bellAnimation, {
-              toValue: 1,
-              duration: 200,
-              useNativeDriver: true,
-            }),
-            Animated.timing(bellAnimation, {
-              toValue: 0,
-              duration: 200,
-              useNativeDriver: true,
-            }),
-          ]).start();
-        }
-        
-        setUnreadCount(newUnreadCount);
+        setUnreadCount(notificationService.getUnreadCount());
       });
 
       return unsubscribe;
     } catch (error) {
       console.error('Error initializing notifications:', error);
     }
-  }, [unreadCount]);
+  }, []);
 
   const formatTime = (date: Date) => {
     const now = new Date();
@@ -116,20 +97,13 @@ export default function NotificationWidget({ onNotificationPress }: Notification
     await notificationService.clearNotifications();
   };
 
-  const bellRotation = bellAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '15deg'],
-  });
-
   return (
     <>
       <TouchableOpacity
         style={styles.bellButton}
         onPress={() => setShowModal(true)}
       >
-        <Animated.View style={{ transform: [{ rotate: bellRotation }] }}>
-          <Bell size={24} color="white" />
-        </Animated.View>
+        <Bell size={24} color="white" />
         {unreadCount > 0 && (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>

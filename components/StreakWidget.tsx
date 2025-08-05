@@ -4,10 +4,9 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Flame, Users, Calendar } from 'lucide-react-native';
+import { Flame } from 'lucide-react-native';
 import NotificationService from '@/lib/notifications';
 
 interface StreakWidgetProps {
@@ -27,7 +26,6 @@ export default function StreakWidget({
   totalMembers,
   onPress,
 }: StreakWidgetProps) {
-  const [pulseAnimation] = useState(new Animated.Value(1));
   const [showCelebration, setShowCelebration] = useState(false);
 
   const progress = totalMembers > 0 ? membersContributed / totalMembers : 0;
@@ -49,20 +47,6 @@ export default function StreakWidget({
       } catch (error) {
         console.error('Error sending streak notification:', error);
       }
-
-      // Celebration animation
-      Animated.sequence([
-        Animated.timing(pulseAnimation, {
-          toValue: 1.2,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnimation, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
 
       // Reset celebration flag after animation
       setTimeout(() => setShowCelebration(false), 2000);
@@ -94,12 +78,7 @@ export default function StreakWidget({
         ]}
         style={styles.gradient}
       >
-        <Animated.View 
-          style={[
-            styles.content,
-            { transform: [{ scale: pulseAnimation }] }
-          ]}
-        >
+        <View style={styles.content}>
           <View style={styles.header}>
             <View style={styles.streakInfo}>
               <Text style={styles.streakEmoji}>{getStreakEmoji()}</Text>
@@ -138,7 +117,7 @@ export default function StreakWidget({
               <Text style={styles.celebrationText}>🎊 ¡INCREÍBLE! 🎊</Text>
             </View>
           )}
-        </Animated.View>
+        </View>
       </LinearGradient>
     </TouchableOpacity>
   );
