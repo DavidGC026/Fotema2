@@ -97,9 +97,7 @@ export default function ChatScreen() {
   const runDatabaseDiagnostic = async () => {
     setShowDiagnosticModal(true);
     try {
-      // Importar directamente el módulo de base de datos para hacer el diagnóstico
-      const { testDatabaseConnection } = await import('@/lib/database');
-      const result = await testDatabaseConnection();
+      const result = await ApiService.testDatabaseConnection();
       setConnectionError(result);
     } catch (error) {
       console.error('Diagnostic failed:', error);
