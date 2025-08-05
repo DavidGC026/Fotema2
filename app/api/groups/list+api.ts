@@ -27,7 +27,7 @@ export async function GET(request: Request) {
           status: 400, 
           headers: { 
             'Content-Type': 'application/json',
-            ...corsHeaders
+            'Access-Control-Allow-Origin': '*'
           } 
         }
       );
@@ -62,7 +62,7 @@ export async function GET(request: Request) {
         status: 200, 
         headers: { 
           'Content-Type': 'application/json',
-          ...corsHeaders
+          'Access-Control-Allow-Origin': '*'
         } 
       }
     );
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
         status: 500, 
         headers: { 
           'Content-Type': 'application/json',
-          ...corsHeaders
+          'Access-Control-Allow-Origin': '*'
         } 
       }
     );
