@@ -25,7 +25,6 @@ const dbConfig = {
   connectTimeout: 60000,
 };
 
-let connection: mysql.Connection | null = null;
 let connection: any = null;
 
 export async function getConnection() {
