@@ -25,7 +25,12 @@ export class ApiService {
 
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
-        return response.json();
+        try {
+          return await response.json();
+        } catch (jsonError) {
+          const text = await response.text().catch(() => 'Unable to read response');
+          throw new Error(`Server returned invalid JSON. Response: ${text.substring(0, 200)}...`);
+        }
       } else {
         throw new Error('Server returned non-JSON response');
       }
