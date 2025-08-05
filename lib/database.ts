@@ -9,6 +9,9 @@ const dbConfig = {
   ssl: process.env.EXPO_PUBLIC_DB_SSL === 'true' ? {
     rejectUnauthorized: false
   } : false,
+  connectTimeout: 60000,
+  acquireTimeout: 60000,
+  timeout: 60000,
 };
 
 let connection: mysql.Connection | null = null;
