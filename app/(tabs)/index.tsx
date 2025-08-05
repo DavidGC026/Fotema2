@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Send, Heart, Flame } from 'lucide-react-native';
+import NotificationWidget from '@/components/NotificationWidget';
+import NotificationService from '@/lib/notifications';
 
 interface Message {
   id: string;
@@ -61,6 +63,16 @@ export default function ChatScreen() {
       };
       setMessages([...messages, newMessage]);
       setInputText('');
+
+      // Send notification to group members (simulate)
+      const notificationService = NotificationService.getInstance();
+      notificationService.addNotification({
+        groupId: '1',
+        groupName: 'Grupo Aventureros',
+        senderName: 'Tú',
+        type: 'message',
+        content: inputText,
+      });
     }
   };
 
@@ -82,9 +94,12 @@ export default function ChatScreen() {
     >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Grupo Aventureros</Text>
-        <View style={styles.streakBadge}>
-          <Flame size={16} color="#FF6B35" />
-          <Text style={styles.streakText}>7 días</Text>
+        <View style={styles.headerRight}>
+          <NotificationWidget />
+          <View style={styles.streakBadge}>
+            <Flame size={16} color="#FF6B35" />
+            <Text style={styles.streakText}>7 días</Text>
+          </View>
         </View>
       </View>
 
@@ -163,6 +178,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   streakBadge: {
     flexDirection: 'row',

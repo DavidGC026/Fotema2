@@ -18,6 +18,7 @@ import {
   Send, 
   Users 
 } from 'lucide-react-native';
+import NotificationService from '@/lib/notifications';
 
 export default function CameraScreen() {
   const [facing, setFacing] = useState<CameraType>('back');
@@ -77,6 +78,16 @@ export default function CameraScreen() {
   const sendPhoto = () => {
     setShowPreview(false);
     setCapturedPhoto(null);
+    
+    // Send notification to group members
+    const notificationService = NotificationService.getInstance();
+    notificationService.addNotification({
+      groupId: '1',
+      groupName: 'Grupo Aventureros',
+      senderName: 'Tú',
+      type: 'photo',
+    });
+    
     Alert.alert('¡Enviado!', 'Tu foto ha sido compartida con el grupo');
   };
 

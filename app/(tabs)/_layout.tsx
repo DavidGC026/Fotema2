@@ -1,7 +1,14 @@
 import { Tabs } from 'expo-router';
+import { useEffect } from 'react';
 import { Camera, MessageCircle, Users, Trophy } from 'lucide-react-native';
+import NotificationService from '@/lib/notifications';
 
 export default function TabLayout() {
+  useEffect(() => {
+    // Initialize notification service
+    NotificationService.getInstance().initialize();
+  }, []);
+
   return (
     <Tabs
       screenOptions={{

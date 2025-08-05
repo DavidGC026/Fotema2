@@ -1,6 +1,7 @@
 import { getConnection } from '@/lib/database';
 import { saveImage } from '@/lib/imageUpload';
 import type { Message } from '@/types/database';
+import { sendNotificationToGroup } from '@/lib/notificationServer';
 
 export async function POST(request: Request) {
   try {
@@ -74,6 +75,19 @@ export async function POST(request: Request) {
     `, [messageId]) as any;
 
     const message = messages[0] as Message & { username: string };
+
+    // Send push notifications to group members
+    await sendNotificationToGroup(groupId, {
+      title: messageType === 'image' ? `📸 Nueva foto` : `💬 Nuevo mensaje`,
+      body: messageType === 'image' 
+        ? `${message.username} compartió una foto`
+        : `${message.username}: ${content?.substring(0, 50)}${content && content.length > 50 ? '...' : ''}`,
+      data: {
+        groupId: groupId.toString(),
+        messageId: messageId.toString(),
+        type: messageType,
+      },
+    });
 
     return new Response(
       JSON.stringify({ message }),

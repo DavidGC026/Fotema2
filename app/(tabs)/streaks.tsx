@@ -17,6 +17,8 @@ import {
   Award,
   Star
 } from 'lucide-react-native';
+import StreakWidget from '@/components/StreakWidget';
+import NotificationWidget from '@/components/NotificationWidget';
 
 interface StreakData {
   groupName: string;
@@ -65,15 +67,33 @@ export default function StreaksScreen() {
     >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Rachas</Text>
-        <View style={styles.headerStats}>
-          <View style={styles.statItem}>
-            <Flame size={16} color="#FF6B35" />
-            <Text style={styles.statNumber}>{totalStreaks}</Text>
+        <View style={styles.headerRight}>
+          <NotificationWidget />
+          <View style={styles.headerStats}>
+            <View style={styles.statItem}>
+              <Flame size={16} color="#FF6B35" />
+              <Text style={styles.statNumber}>{totalStreaks}</Text>
+            </View>
           </View>
         </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Widgets de Rachas Activas */}
+        <View style={styles.activeStreaks}>
+          <Text style={styles.sectionTitle}>Rachas Activas</Text>
+          {streaks.map((streak, index) => (
+            <StreakWidget
+              key={index}
+              groupId={streak.groupName}
+              groupName={streak.groupName}
+              currentStreak={streak.currentStreak}
+              membersContributed={streak.todayContributed ? streak.participants.length : streak.participants.length - 1}
+              totalMembers={streak.participants.length}
+            />
+          ))}
+        </View>
+
         {/* Estadísticas Globales */}
         <View style={styles.globalStats}>
           <LinearGradient
@@ -221,6 +241,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   headerStats: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -242,6 +267,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  activeStreaks: {
+    marginBottom: 24,
   },
   globalStats: {
     marginBottom: 24,

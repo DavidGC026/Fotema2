@@ -120,6 +120,25 @@ export async function initializeDatabase() {
       )
     `);
 
+    // Notifications table for persistence
+    await conn.execute(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        group_id INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        body TEXT NOT NULL,
+        data JSON,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Add push_token column to users table
+    await conn.execute(`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS push_token VARCHAR(255)
+    `);
+
     console.log('Database tables initialized successfully');
   } catch (error) {
     console.error('Error initializing database:', error);
