@@ -15,10 +15,12 @@ export async function OPTIONS(request: Request) {
 
 export async function GET(request: Request) {
   try {
+    console.log('📋 Groups API called');
     const url = new URL(request.url);
     const userId = url.searchParams.get('userId');
 
     if (!userId) {
+      console.log('❌ Missing userId parameter');
       return new Response(
         JSON.stringify({ error: 'User ID is required' }),
         { 
@@ -31,7 +33,9 @@ export async function GET(request: Request) {
       );
     }
 
+    console.log(`👤 Loading groups for user: ${userId}`);
     const conn = await getConnection();
+    console.log('✅ Database connection established');
     
     // Get user's groups with member count and latest message
     const [groups] = await conn.execute(`
@@ -51,6 +55,7 @@ export async function GET(request: Request) {
       ORDER BY last_message_at DESC, g.created_at DESC
     `, [userId, userId]) as any;
 
+    console.log(`📊 Found ${groups.length} groups for user ${userId}`);
     return new Response(
       JSON.stringify({ groups }),
       { 
@@ -63,8 +68,15 @@ export async function GET(request: Request) {
     );
   } catch (error) {
     console.error('Get groups error:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace'
+    });
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }),
       { 
         status: 500, 
         headers: { 

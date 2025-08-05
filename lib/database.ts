@@ -1,4 +1,17 @@
-import mysql from 'mysql2/promise';
+let mysql: any = null;
+
+// Dynamically import mysql2 only on server side
+async function getMysql() {
+  if (!mysql) {
+    try {
+      mysql = await import('mysql2/promise');
+    } catch (error) {
+      console.error('Failed to import mysql2:', error);
+      throw new Error('Database module not available in this environment');
+    }
+  }
+  return mysql;
+}
 
 const dbConfig = {
   host: process.env.EXPO_PUBLIC_DB_HOST || 'srv449.hstgr.io',
@@ -13,10 +26,12 @@ const dbConfig = {
 };
 
 let connection: mysql.Connection | null = null;
+let connection: any = null;
 
 export async function getConnection() {
   if (!connection) {
     try {
+      const mysql = await getMysql();
       connection = await mysql.createConnection(dbConfig);
       console.log('✅ Conectado exitosamente a la base de datos MySQL');
       console.log(`📍 Host: ${dbConfig.host}`);
@@ -239,6 +254,7 @@ export async function testDatabaseConnection() {
   let testConnection = null;
   
   try {
+    const mysql = await getMysql();
     // Create a new connection for testing
     testConnection = await mysql.createConnection(dbConfig);
     console.log('✅ Conexión establecida exitosamente');
