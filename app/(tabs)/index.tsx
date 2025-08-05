@@ -65,14 +65,18 @@ export default function ChatScreen() {
       setInputText('');
 
       // Send notification to group members (simulate)
-      const notificationService = NotificationService.getInstance();
-      notificationService.addNotification({
-        groupId: '1',
-        groupName: 'Grupo Aventureros',
-        senderName: 'Tú',
-        type: 'message',
-        content: inputText,
-      });
+      try {
+        const notificationService = NotificationService.getInstance();
+        notificationService.addNotification({
+          groupId: '1',
+          groupName: 'Grupo Aventureros',
+          senderName: 'Tú',
+          type: 'message',
+          content: inputText,
+        });
+      } catch (error) {
+        console.error('Error sending notification:', error);
+      }
     }
   };
 

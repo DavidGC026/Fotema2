@@ -80,13 +80,17 @@ export default function CameraScreen() {
     setCapturedPhoto(null);
     
     // Send notification to group members
-    const notificationService = NotificationService.getInstance();
-    notificationService.addNotification({
-      groupId: '1',
-      groupName: 'Grupo Aventureros',
-      senderName: 'Tú',
-      type: 'photo',
-    });
+    try {
+      const notificationService = NotificationService.getInstance();
+      notificationService.addNotification({
+        groupId: '1',
+        groupName: 'Grupo Aventureros',
+        senderName: 'Tú',
+        type: 'photo',
+      });
+    } catch (error) {
+      console.error('Error sending notification:', error);
+    }
     
     Alert.alert('¡Enviado!', 'Tu foto ha sido compartida con el grupo');
   };

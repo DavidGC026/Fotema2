@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -167,7 +167,14 @@ class NotificationService {
 
   private async saveNotifications() {
     try {
-      await AsyncStorage.setItem('notifications', JSON.stringify(this.notifications));
+      // For web compatibility, use localStorage
+      if (Platform.OS === 'web') {
+        localStorage.setItem('notifications', JSON.stringify(this.notifications));
+      } else {
+        // Use AsyncStorage for mobile
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        await AsyncStorage.setItem('notifications', JSON.stringify(this.notifications));
+      }
     } catch (error) {
       console.error('Error saving notifications:', error);
     }
@@ -175,12 +182,24 @@ class NotificationService {
 
   private async loadNotifications() {
     try {
-      const stored = await AsyncStorage.getItem('notifications');
+      let stored = null;
+      if (Platform.OS === 'web') {
+        stored = localStorage.getItem('notifications');
+      } else {
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        stored = await AsyncStorage.getItem('notifications');
+      }
+      
       if (stored) {
-        this.notifications = JSON.parse(stored).map((n: any) => ({
-          ...n,
-          timestamp: new Date(n.timestamp),
-        }));
+        try {
+          this.notifications = JSON.parse(stored).map((n: any) => ({
+            ...n,
+            timestamp: new Date(n.timestamp),
+          }));
+        } catch (parseError) {
+          console.error('Error parsing stored notifications:', parseError);
+          this.notifications = [];
+        }
       }
     } catch (error) {
       console.error('Error loading notifications:', error);

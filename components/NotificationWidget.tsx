@@ -7,6 +7,7 @@ import {
   ScrollView,
   Modal,
   Animated,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { 
@@ -33,35 +34,39 @@ export default function NotificationWidget({ onNotificationPress }: Notification
   useEffect(() => {
     const notificationService = NotificationService.getInstance();
     
-    // Initialize notifications
-    setNotifications(notificationService.getNotifications());
-    setUnreadCount(notificationService.getUnreadCount());
+    // Initialize notifications only if not on web or if service is available
+    try {
+      setNotifications(notificationService.getNotifications());
+      setUnreadCount(notificationService.getUnreadCount());
 
-    // Subscribe to updates
-    const unsubscribe = notificationService.subscribe((newNotifications) => {
-      setNotifications(newNotifications);
-      const newUnreadCount = notificationService.getUnreadCount();
-      
-      // Animate bell if new notifications
-      if (newUnreadCount > unreadCount) {
-        Animated.sequence([
-          Animated.timing(bellAnimation, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(bellAnimation, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      }
-      
-      setUnreadCount(newUnreadCount);
-    });
+      // Subscribe to updates
+      const unsubscribe = notificationService.subscribe((newNotifications) => {
+        setNotifications(newNotifications);
+        const newUnreadCount = notificationService.getUnreadCount();
+        
+        // Animate bell if new notifications
+        if (newUnreadCount > unreadCount) {
+          Animated.sequence([
+            Animated.timing(bellAnimation, {
+              toValue: 1,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+            Animated.timing(bellAnimation, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+          ]).start();
+        }
+        
+        setUnreadCount(newUnreadCount);
+      });
 
-    return unsubscribe;
+      return unsubscribe;
+    } catch (error) {
+      console.error('Error initializing notifications:', error);
+    }
   }, [unreadCount]);
 
   const formatTime = (date: Date) => {

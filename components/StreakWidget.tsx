@@ -38,13 +38,17 @@ export default function StreakWidget({
       setShowCelebration(true);
       
       // Send streak notification
-      const notificationService = NotificationService.getInstance();
-      notificationService.addNotification({
-        groupId,
-        groupName,
-        senderName: 'Sistema',
-        type: 'streak',
-      });
+      try {
+        const notificationService = NotificationService.getInstance();
+        notificationService.addNotification({
+          groupId,
+          groupName,
+          senderName: 'Sistema',
+          type: 'streak',
+        });
+      } catch (error) {
+        console.error('Error sending streak notification:', error);
+      }
 
       // Celebration animation
       Animated.sequence([
