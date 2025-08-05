@@ -22,7 +22,9 @@ import {
   Users,
   Camera,
   Paperclip,
-  X
+  X,
+  Wifi,
+  WifiOff
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { ApiService } from '@/services/api';
@@ -58,12 +60,15 @@ export default function ChatScreen() {
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [dbConnected, setDbConnected] = useState<boolean | null>(null);
+  const [showConnectionStatus, setShowConnectionStatus] = useState(true);
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Mock user ID - In real app, get from auth context
   const currentUserId = 1;
 
   useEffect(() => {
+    checkDatabaseConnection();
     loadGroups();
   }, []);
 
@@ -72,6 +77,18 @@ export default function ChatScreen() {
       loadMessages(selectedGroup.id);
     }
   }, [selectedGroup]);
+
+  const checkDatabaseConnection = async () => {
+    try {
+      await ApiService.initializeDatabase();
+      setDbConnected(true);
+      // Hide connection status after 3 seconds if successful
+      setTimeout(() => setShowConnectionStatus(false), 3000);
+    } catch (error) {
+      console.error('Database connection failed:', error);
+      setDbConnected(false);
+    }
+  };
 
   const loadGroups = async () => {
     try {
@@ -228,6 +245,36 @@ export default function ChatScreen() {
 
   return (
     <LinearGradient colors={['#1F2937', '#111827']} style={styles.container}>
+      {/* Database Connection Status */}
+      {showConnectionStatus && dbConnected !== null && (
+        <View style={[
+          styles.connectionStatus,
+          dbConnected ? styles.connectionSuccess : styles.connectionError
+        ]}>
+          <View style={styles.connectionContent}>
+            {dbConnected ? (
+              <>
+                <Wifi size={16} color="#10B981" />
+                <Text style={styles.connectionText}>Base de datos conectada</Text>
+              </>
+            ) : (
+              <>
+                <WifiOff size={16} color="#EF4444" />
+                <Text style={[styles.connectionText, styles.connectionErrorText]}>
+                  Error de conexión a la base de datos
+                </Text>
+              </>
+            )}
+            <TouchableOpacity
+              style={styles.closeConnectionStatus}
+              onPress={() => setShowConnectionStatus(false)}
+            >
+              <X size={14} color={dbConnected ? "#10B981" : "#EF4444"} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.groupSelector}
@@ -689,5 +736,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginLeft: 4,
+  },
+  connectionStatus: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    right: 20,
+    zIndex: 1000,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  connectionSuccess: {
+    backgroundColor: 'rgba(16, 185, 129, 0.9)',
+  },
+  connectionError: {
+    backgroundColor: 'rgba(239, 68, 68, 0.9)',
+  },
+  connectionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  connectionText: {
+    flex: 1,
+    color: '#10B981',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  connectionErrorText: {
+    color: '#EF4444',
+  },
+  closeConnectionStatus: {
+    padding: 4,
   },
 });

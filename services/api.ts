@@ -36,7 +36,10 @@ export class ApiService {
       }
     } catch (error) {
       if (error instanceof TypeError && error.message === 'Network request failed') {
-        throw new Error('Unable to connect to server. Please check if the server is running.');
+        throw new Error('No se pudo conectar al servidor. Verifica que el servidor esté ejecutándose.');
+      }
+      if (error instanceof Error && error.message.includes('fetch')) {
+        throw new Error('Error de red. Verifica tu conexión a internet.');
       }
       throw error;
     }
