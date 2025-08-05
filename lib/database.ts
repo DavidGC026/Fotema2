@@ -10,8 +10,6 @@ const dbConfig = {
     rejectUnauthorized: false
   } : false,
   connectTimeout: 60000,
-  acquireTimeout: 60000,
-  timeout: 60000,
 };
 
 let connection: mysql.Connection | null = null;
@@ -23,8 +21,14 @@ export async function getConnection() {
       console.log('✅ Conectado exitosamente a la base de datos MySQL');
       console.log(`📍 Host: ${dbConfig.host}`);
       console.log(`🗄️ Base de datos: ${dbConfig.database}`);
-    } catch (error) {
-      console.error('❌ Error al conectar con la base de datos:', error);
+    } catch (error: any) {
+      console.error('❌ Error al conectar con la base de datos:');
+      console.error('Código de error:', error.code);
+      console.error('Mensaje:', error.message);
+      if (error.sqlMessage) {
+        console.error('SQL Error:', error.sqlMessage);
+      }
+      console.error('Stack:', error.stack);
       throw error;
     }
   }
@@ -60,7 +64,7 @@ export async function initializeDatabase() {
 
     // Groups table
     await conn.execute(`
-      CREATE TABLE IF NOT EXISTS groups (
+      CREATE TABLE IF NOT EXISTS \`groups\` (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
         description TEXT,
@@ -82,7 +86,7 @@ export async function initializeDatabase() {
         joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         is_admin BOOLEAN DEFAULT FALSE,
         UNIQUE KEY unique_member (group_id, user_id),
-        FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+        FOREIGN KEY (group_id) REFERENCES \`groups\`(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
@@ -101,7 +105,7 @@ export async function initializeDatabase() {
         reply_to_message_id INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+        FOREIGN KEY (group_id) REFERENCES \`groups\`(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (reply_to_message_id) REFERENCES messages(id) ON DELETE SET NULL,
         INDEX idx_group_created (group_id, created_at),
@@ -123,7 +127,7 @@ export async function initializeDatabase() {
         likes_count INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY unique_wall_photo (group_id, message_id),
-        FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+        FOREIGN KEY (group_id) REFERENCES \`groups\`(id) ON DELETE CASCADE,
         FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         INDEX idx_group_created (group_id, created_at DESC)
@@ -153,7 +157,7 @@ export async function initializeDatabase() {
         last_activity_date DATE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
+        FOREIGN KEY (group_id) REFERENCES \`groups\`(id) ON DELETE CASCADE
       )
     `);
 
@@ -168,7 +172,7 @@ export async function initializeDatabase() {
         message_id INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY unique_daily_contribution (group_id, user_id, contribution_date),
-        FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+        FOREIGN KEY (group_id) REFERENCES \`groups\`(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE SET NULL,
         INDEX idx_contribution_date (contribution_date),
@@ -188,7 +192,7 @@ export async function initializeDatabase() {
         read_at TIMESTAMP NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+        FOREIGN KEY (group_id) REFERENCES \`groups\`(id) ON DELETE CASCADE,
         INDEX idx_user_unread (user_id, read_at),
         INDEX idx_created (created_at DESC)
       )
@@ -219,5 +223,81 @@ export async function initializeDatabase() {
   } catch (error) {
     console.error('❌ Error al inicializar la base de datos:', error);
     throw error;
+  }
+}
+
+// Test database connection with detailed logging
+export async function testDatabaseConnection() {
+  console.log('🔍 Iniciando prueba de conexión a la base de datos...');
+  console.log('🔧 Configuración actual:');
+  console.log(`  - Host: ${dbConfig.host}`);
+  console.log(`  - Usuario: ${dbConfig.user}`);
+  console.log(`  - Base de datos: ${dbConfig.database}`);
+  console.log(`  - Puerto: ${dbConfig.port}`);
+  console.log(`  - SSL: ${dbConfig.ssl ? 'Habilitado' : 'Deshabilitado'}`);
+  
+  let testConnection = null;
+  
+  try {
+    // Create a new connection for testing
+    testConnection = await mysql.createConnection(dbConfig);
+    console.log('✅ Conexión establecida exitosamente');
+    
+    // Test basic query
+    const [result] = await testConnection.execute('SELECT 1 as test, NOW() as timestamp, VERSION() as version') as any;
+    console.log('🔍 Consulta de prueba exitosa:', result[0]);
+    
+    // Test database access
+    const [tables] = await testConnection.execute('SHOW TABLES') as any;
+    console.log(`📋 Tablas encontradas: ${tables.length}`);
+    
+    // Test specific table
+    const [userCount] = await testConnection.execute('SELECT COUNT(*) as count FROM users') as any;
+    console.log(`👥 Registros en tabla users: ${userCount[0].count}`);
+    
+    return {
+      success: true,
+      message: 'Conexión exitosa',
+      details: {
+        host: dbConfig.host,
+        database: dbConfig.database,
+        version: result[0].version,
+        tablesCount: tables.length,
+        usersCount: userCount[0].count,
+        timestamp: result[0].timestamp
+      }
+    };
+    
+  } catch (error: any) {
+    console.error('❌ Error en la prueba de conexión:');
+    
+    const errorDetails = {
+      code: error.code,
+      message: error.message,
+      sqlMessage: error.sqlMessage,
+      stack: error.stack,
+    };
+
+    console.error('Código:', errorDetails.code);
+    console.error('Mensaje:', errorDetails.message);
+    if (errorDetails.sqlMessage) {
+      console.error('SQL Error:', errorDetails.sqlMessage);
+    }
+    
+    return {
+      success: false,
+      message: 'Error de conexión',
+      error: errorDetails
+    };
+    
+  } finally {
+    if (testConnection) {
+      try {
+        await testConnection.end();
+        console.log('🔒 Conexión de prueba cerrada');
+      } catch (closeError) {
+        console.error('Error cerrando conexión de prueba:', closeError);
+      }
+    }
   }
 }

@@ -62,6 +62,8 @@ export default function ChatScreen() {
   const [sending, setSending] = useState(false);
   const [dbConnected, setDbConnected] = useState<boolean | null>(null);
   const [showConnectionStatus, setShowConnectionStatus] = useState(true);
+  const [connectionError, setConnectionError] = useState<any>(null);
+  const [showDiagnosticModal, setShowDiagnosticModal] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Mock user ID - In real app, get from auth context
@@ -82,11 +84,33 @@ export default function ChatScreen() {
     try {
       await ApiService.initializeDatabase();
       setDbConnected(true);
+      setConnectionError(null);
       // Hide connection status after 3 seconds if successful
       setTimeout(() => setShowConnectionStatus(false), 3000);
     } catch (error) {
       console.error('Database connection failed:', error);
       setDbConnected(false);
+      setConnectionError(error);
+    }
+  };
+
+  const runDatabaseDiagnostic = async () => {
+    setShowDiagnosticModal(true);
+    try {
+      // Importar directamente el módulo de base de datos para hacer el diagnóstico
+      const { testDatabaseConnection } = await import('@/lib/database');
+      const result = await testDatabaseConnection();
+      setConnectionError(result);
+    } catch (error) {
+      console.error('Diagnostic failed:', error);
+      setConnectionError({
+        success: false,
+        message: 'Error al ejecutar el diagnóstico',
+        error: { 
+          message: error instanceof Error ? error.message : 'Error desconocido',
+          code: (error as any).code || 'UNKNOWN_ERROR'
+        }
+      });
     }
   };
 
@@ -263,6 +287,12 @@ export default function ChatScreen() {
                 <Text style={[styles.connectionText, styles.connectionErrorText]}>
                   Error de conexión a la base de datos
                 </Text>
+                <TouchableOpacity
+                  style={styles.diagnosticButton}
+                  onPress={runDatabaseDiagnostic}
+                >
+                  <Text style={styles.diagnosticButtonText}>Diagnóstico</Text>
+                </TouchableOpacity>
               </>
             )}
             <TouchableOpacity
@@ -454,6 +484,170 @@ export default function ChatScreen() {
                   </View>
                 </TouchableOpacity>
               ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Database Diagnostic Modal */}
+      <Modal
+        visible={showDiagnosticModal}
+        animationType="slide"
+        transparent
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxHeight: '80%' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>🔍 Diagnóstico de Conexión</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowDiagnosticModal(false)}
+              >
+                <X size={24} color="white" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.diagnosticContent}>
+              {connectionError ? (
+                <View>
+                  {/* Status */}
+                  <View style={styles.diagnosticSection}>
+                    <View style={[
+                      styles.statusBadge,
+                      connectionError.success ? styles.statusSuccess : styles.statusError
+                    ]}>
+                      <Text style={[
+                        styles.statusText,
+                        connectionError.success ? styles.statusSuccessText : styles.statusErrorText
+                      ]}>
+                        {connectionError.success ? '✅ CONEXIÓN EXITOSA' : '❌ ERROR DE CONEXIÓN'}
+                      </Text>
+                    </View>
+                    <Text style={styles.diagnosticMessage}>{connectionError.message}</Text>
+                  </View>
+
+                  {/* Success Details */}
+                  {connectionError.success && connectionError.details && (
+                    <View style={styles.diagnosticSection}>
+                      <Text style={styles.sectionTitle}>📊 Detalles de la Conexión</Text>
+                      <View style={styles.detailsContainer}>
+                        <Text style={styles.detailItem}>🏠 Host: {connectionError.details.host}</Text>
+                        <Text style={styles.detailItem}>🗄️ Base de datos: {connectionError.details.database}</Text>
+                        <Text style={styles.detailItem}>⚡ Versión MySQL: {connectionError.details.version}</Text>
+                        <Text style={styles.detailItem}>📋 Tablas: {connectionError.details.tablesCount}</Text>
+                        <Text style={styles.detailItem}>👥 Usuarios: {connectionError.details.usersCount}</Text>
+                        <Text style={styles.detailItem}>🕐 Timestamp: {new Date(connectionError.details.timestamp).toLocaleString('es-ES')}</Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Error Details */}
+                  {!connectionError.success && connectionError.error && (
+                    <View>
+                      <View style={styles.diagnosticSection}>
+                        <Text style={styles.sectionTitle}>🚨 Información del Error</Text>
+                        <View style={styles.errorContainer}>
+                          {connectionError.error.code && (
+                            <Text style={styles.errorItem}>
+                              <Text style={styles.errorLabel}>Código:</Text> {connectionError.error.code}
+                            </Text>
+                          )}
+                          {connectionError.error.message && (
+                            <Text style={styles.errorItem}>
+                              <Text style={styles.errorLabel}>Mensaje:</Text> {connectionError.error.message}
+                            </Text>
+                          )}
+                          {connectionError.error.sqlMessage && (
+                            <Text style={styles.errorItem}>
+                              <Text style={styles.errorLabel}>SQL Error:</Text> {connectionError.error.sqlMessage}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+
+                      {/* Diagnostic and Solutions */}
+                      <View style={styles.diagnosticSection}>
+                        <Text style={styles.sectionTitle}>🔍 Diagnóstico</Text>
+                        <View style={styles.diagnosticText}>
+                          {connectionError.error.code === 'ENOTFOUND' && (
+                            <>
+                              <Text style={styles.diagnosisItem}>• El host de la base de datos no se pudo resolver</Text>
+                              <Text style={styles.diagnosisItem}>• Verifica que el host sea correcto y esté accesible</Text>
+                            </>
+                          )}
+                          {connectionError.error.code === 'ECONNREFUSED' && (
+                            <>
+                              <Text style={styles.diagnosisItem}>• La conexión fue rechazada</Text>
+                              <Text style={styles.diagnosisItem}>• Verifica que el puerto sea correcto y el servidor esté ejecutándose</Text>
+                            </>
+                          )}
+                          {connectionError.error.code === 'ER_ACCESS_DENIED_ERROR' && (
+                            <>
+                              <Text style={styles.diagnosisItem}>• Acceso denegado</Text>
+                              <Text style={styles.diagnosisItem}>• Verifica el usuario y contraseña</Text>
+                            </>
+                          )}
+                          {connectionError.error.code === 'ER_BAD_DB_ERROR' && (
+                            <>
+                              <Text style={styles.diagnosisItem}>• Base de datos no encontrada</Text>
+                              <Text style={styles.diagnosisItem}>• Verifica que el nombre de la base de datos sea correcto</Text>
+                            </>
+                          )}
+                          {connectionError.error.code === 'ETIMEDOUT' && (
+                            <>
+                              <Text style={styles.diagnosisItem}>• Timeout de conexión</Text>
+                              <Text style={styles.diagnosisItem}>• El servidor puede estar sobrecargado o la red es lenta</Text>
+                            </>
+                          )}
+                          {connectionError.error.code === 'ECONNRESET' && (
+                            <>
+                              <Text style={styles.diagnosisItem}>• Conexión reiniciada por el servidor</Text>
+                              <Text style={styles.diagnosisItem}>• Puede ser un problema de configuración SSL o firewall</Text>
+                            </>
+                          )}
+                          {!['ENOTFOUND', 'ECONNREFUSED', 'ER_ACCESS_DENIED_ERROR', 'ER_BAD_DB_ERROR', 'ETIMEDOUT', 'ECONNRESET'].includes(connectionError.error.code) && (
+                            <Text style={styles.diagnosisItem}>• Error no reconocido, revisa los logs para más detalles</Text>
+                          )}
+                        </View>
+                      </View>
+
+                      <View style={styles.diagnosticSection}>
+                        <Text style={styles.sectionTitle}>💡 Posibles Soluciones</Text>
+                        <View style={styles.solutionsContainer}>
+                          <Text style={styles.solutionItem}>1. Verifica las credenciales de la base de datos</Text>
+                          <Text style={styles.solutionItem}>2. Confirma que el servidor MySQL esté ejecutándose</Text>
+                          <Text style={styles.solutionItem}>3. Revisa la configuración de firewall</Text>
+                          <Text style={styles.solutionItem}>4. Verifica la configuración SSL si es necesaria</Text>
+                          <Text style={styles.solutionItem}>5. Confirma que la base de datos existe</Text>
+                        </View>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Retry Button */}
+                  <View style={styles.diagnosticSection}>
+                    <TouchableOpacity
+                      style={styles.retryButton}
+                      onPress={() => {
+                        setShowDiagnosticModal(false);
+                        checkDatabaseConnection();
+                      }}
+                    >
+                      <LinearGradient
+                        colors={['#8B5CF6', '#06B6D4']}
+                        style={styles.retryGradient}
+                      >
+                        <Text style={styles.retryButtonText}>🔄 Reintentar Conexión</Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.diagnosticSection}>
+                  <ActivityIndicator size="large" color="#8B5CF6" />
+                  <Text style={styles.loadingDiagnosticText}>Ejecutando diagnóstico...</Text>
+                </View>
+              )}
             </ScrollView>
           </View>
         </View>
@@ -770,5 +964,131 @@ const styles = StyleSheet.create({
   },
   closeConnectionStatus: {
     padding: 4,
+  },
+  diagnosticButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  diagnosticButtonText: {
+    color: '#EF4444',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  diagnosticContent: {
+    flex: 1,
+    padding: 20,
+  },
+  diagnosticSection: {
+    marginBottom: 20,
+  },
+  statusBadge: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statusSuccess: {
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+  },
+  statusError: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+  },
+  statusText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  statusSuccessText: {
+    color: '#10B981',
+  },
+  statusErrorText: {
+    color: '#EF4444',
+  },
+  diagnosticMessage: {
+    color: '#D1D5DB',
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  sectionTitle: {
+    color: '#8B5CF6',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  detailsContainer: {
+    backgroundColor: 'rgba(55, 65, 81, 0.5)',
+    borderRadius: 12,
+    padding: 16,
+  },
+  detailItem: {
+    color: '#D1D5DB',
+    fontSize: 14,
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  errorContainer: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  errorItem: {
+    color: '#FCA5A5',
+    fontSize: 14,
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  errorLabel: {
+    fontWeight: 'bold',
+    color: '#EF4444',
+  },
+  diagnosticText: {
+    backgroundColor: 'rgba(55, 65, 81, 0.5)',
+    borderRadius: 12,
+    padding: 16,
+  },
+  diagnosisItem: {
+    color: '#FCD34D',
+    fontSize: 14,
+    marginBottom: 6,
+    lineHeight: 20,
+  },
+  solutionsContainer: {
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.3)',
+  },
+  solutionItem: {
+    color: '#C4B5FD',
+    fontSize: 14,
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  retryButton: {
+    marginTop: 8,
+  },
+  retryGradient: {
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  loadingDiagnosticText: {
+    color: '#D1D5DB',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 12,
   },
 });

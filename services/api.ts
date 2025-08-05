@@ -121,4 +121,11 @@ export class ApiService {
       method: 'POST',
     });
   }
+
+  // Test database connection
+  static async testDatabaseConnection() {
+    return this.request('/api/test-connection', {
+      method: 'GET',
+    });
+  }
 }
