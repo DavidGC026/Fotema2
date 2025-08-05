@@ -14,7 +14,7 @@ Una aplicación móvil desarrollada en React Native con Expo Router que permite 
 ## Configuración de Base de Datos
 
 ### Requisitos
-- Servidor MySQL remoto
+- Cuenta de Supabase
 - Node.js 18+
 - Expo CLI
 
@@ -23,18 +23,14 @@ Una aplicación móvil desarrollada en React Native con Expo Router que permite 
 Crea un archivo `.env` basado en `.env.example`:
 
 ```env
-EXPO_PUBLIC_DB_HOST=tu-servidor-mysql.com
-EXPO_PUBLIC_DB_USER=tu-usuario
-EXPO_PUBLIC_DB_PASSWORD=tu-contraseña
-EXPO_PUBLIC_DB_NAME=streak_app
-EXPO_PUBLIC_DB_PORT=3306
-EXPO_PUBLIC_DB_SSL=true
+EXPO_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=tu-clave-anonima
 EXPO_PUBLIC_API_URL=http://localhost:8081
 ```
 
 ### Estructura de Base de Datos
 
-La aplicación creará automáticamente las siguientes tablas:
+La aplicación utiliza Supabase (PostgreSQL) con las siguientes tablas:
 
 - **users**: Información de usuarios
 - **groups**: Grupos de chat
@@ -43,11 +39,19 @@ La aplicación creará automáticamente las siguientes tablas:
 - **streaks**: Información de rachas
 - **daily_contributions**: Contribuciones diarias
 
+### Configuración de Supabase
+
+1. Crea una cuenta en [Supabase](https://supabase.com)
+2. Crea un nuevo proyecto
+3. Ve a Settings > API para obtener tu URL y clave anónima
+4. Configura las variables de entorno
+5. Las migraciones se ejecutarán automáticamente
+
 ### Inicialización
 
 1. Configura tus variables de entorno
 2. Ejecuta la app: `npm run dev`
-3. Llama al endpoint `/api/init` para crear las tablas
+3. Conecta tu proyecto a Supabase usando el botón "Connect to Supabase"
 
 ## API Endpoints
 
@@ -85,7 +89,7 @@ La aplicación creará automáticamente las siguientes tablas:
 ## Tecnologías Utilizadas
 
 - **React Native** con Expo Router
-- **MySQL** para base de datos
+- **Supabase** (PostgreSQL) para base de datos
 - **TypeScript** para tipado estático
 - **Lucide React Native** para iconos
 - **Expo Camera** para funcionalidad de cámara
@@ -99,7 +103,7 @@ npm install
 
 # Configurar variables de entorno
 cp .env.example .env
-# Editar .env con tus credenciales
+# Editar .env con tus credenciales de Supabase
 
 # Ejecutar en desarrollo
 npm run dev
@@ -113,15 +117,16 @@ npm run build:web
 ```
 ├── app/
 │   ├── (tabs)/          # Pantallas principales
-│   ├── api/             # API routes
 │   └── _layout.tsx      # Layout principal
 ├── lib/
-│   ├── database.ts      # Conexión MySQL
-│   └── imageUpload.ts   # Manejo de imágenes
+│   ├── supabase.ts      # Cliente Supabase
+│   └── notifications.ts # Sistema de notificaciones
 ├── services/
 │   └── api.ts           # Cliente API
 ├── types/
 │   └── database.ts      # Tipos TypeScript
+├── supabase/
+│   └── migrations/      # Migraciones de base de datos
 └── README.md
 ```
 
