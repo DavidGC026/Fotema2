@@ -43,11 +43,29 @@ export class ApiService {
     });
   }
 
+  static async getUserGroups(userId: number) {
+    return this.request(`/api/groups/list?userId=${userId}`);
+  }
+
   // Messages
-  static async sendMessage(groupId: number, userId: number, content?: string, imageData?: string, messageType: 'text' | 'image' = 'text') {
+  static async sendMessage(
+    groupId: number, 
+    userId: number, 
+    content?: string, 
+    imageData?: string, 
+    messageType: 'text' | 'image' = 'text',
+    imageFilename?: string
+  ) {
     return this.request('/api/messages/send', {
       method: 'POST',
-      body: JSON.stringify({ groupId, userId, content, imageData, messageType }),
+      body: JSON.stringify({ 
+        groupId, 
+        userId, 
+        content, 
+        imageData, 
+        messageType,
+        imageFilename 
+      }),
     });
   }
 
@@ -58,6 +76,18 @@ export class ApiService {
   // Streaks
   static async getStreak(groupId: number) {
     return this.request(`/api/streaks/${groupId}`);
+  }
+
+  // Wall
+  static async getWallPhotos(groupId: number) {
+    return this.request(`/api/wall/${groupId}`);
+  }
+
+  static async likeWallPhoto(wallPhotoId: number, userId: number) {
+    return this.request('/api/wall/like', {
+      method: 'POST',
+      body: JSON.stringify({ wallPhotoId, userId }),
+    });
   }
 
   // Initialize database
