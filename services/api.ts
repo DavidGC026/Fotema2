@@ -1,8 +1,9 @@
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8081';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || '';
 
 export class ApiService {
   private static async request(endpoint: string, options: RequestInit = {}) {
-    const url = `${API_BASE_URL}${endpoint}`;
+    // For Expo Router API routes, use relative URLs when no base URL is configured
+    const url = API_BASE_URL ? `${API_BASE_URL}${endpoint}` : endpoint;
     
     try {
       const response = await fetch(url, {
