@@ -4,20 +4,37 @@ export class ApiService {
   private static async request(endpoint: string, options: RequestInit = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
     
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    });
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        ...options,
+      });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Network error' }));
-      throw new Error(error.error || 'Request failed');
+      if (!response.ok) {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const error = await response.json().catch(() => ({ error: 'Request failed' }));
+          throw new Error(error.error || 'Request failed');
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return response.json();
+      } else {
+        throw new Error('Server returned non-JSON response');
+      }
+    } catch (error) {
+      if (error instanceof TypeError && error.message === 'Network request failed') {
+        throw new Error('Unable to connect to server. Please check if the server is running.');
+      }
+      throw error;
     }
-
-    return response.json();
   }
 
   // Auth
